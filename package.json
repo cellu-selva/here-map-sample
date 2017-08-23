@@ -1,0 +1,20 @@
+{
+  "name": "here_map",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "dependencies": {
+    "consolidate": "^0.14.5",
+    "express": "^4.15.4",
+    "http": "0.0.0",
+    "morgan": "^1.8.1",
+    "node-heremaps": "0.0.2",
+    "swig": "^1.4.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test"
+  },
+  "author": "selvanathann",
+  "license": "ISC"
+}
