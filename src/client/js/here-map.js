@@ -6,14 +6,27 @@
    * @type {H}
    */
   var platform = new H.service.Platform({
-        'app_id': 'kfX92V6MQJfOCWcZivSU',
-        'app_code': 'zK6Q_PKirtqx69toTeqATg',
+        'app_id': 'y8Vqiy3zNGyUHE5Y1bey',
+        'app_code': 'vXulv6kbe74kZAWKhpdpxA',
         useCIT: true,
         useHTTPS: true
       }),mapView = {};
 
   // Obtain the default map types from the platform object:
   var defaultLayers = platform.createDefaultLayers();
+
+  //Variables required for custom drawing
+  var isDrawingModeEnabled = false; // flag to denote whether to draw a polyline or not
+  var fense = new H.geo.LineString(); // hold the lat and lng of the service area
+
+  /**
+   * [Event listener (  button click ) description - Event listener for updating the drawing mode.]
+   * @method onclick
+   */
+  document.getElementById("button").onclick = function(ev) {
+    isDrawingModeEnabled = !isDrawingModeEnabled;
+    document.getElementById("button").innerHTML = isDrawingModeEnabled ? 'Disable Drawing Mode' : 'Enable Drawing Mode';
+  }
 
   /**
    * [onload description - gets triggered once the dom is loaded.]
@@ -23,11 +36,14 @@
   window.onload = function() {
     initializeMap();
     addBehavioursToMap('en-US');
-    constructMarkers(mapView.map, {lat: 13.13658, lng: 80.20605}, 'car');
+    constructMarkers(mapView.map, {lat: 13.13658, lng: 80.20605}, 'pencil');
     moveMapToCoordinate(mapView.map, 14, {lat: 13.13658, lng: 80.20605}); //params map/zoomlevel/coordinates
     addEventListener(mapView.map, 'tap');
     addEventListener(mapView.map, 'dbltap');
-    //changeBaseLayer(mapView.map, defaultLayers.satellite.traffic); //defaultLayers.satellite.traffic
+    addEventListener(mapView.map, 'dragstart');
+    addEventListener(mapView.map, 'dragend');
+    addEventListener(mapView.map, 'drag');
+    changeBaseLayer(mapView.map, defaultLayers.satellite.traffic); //defaultLayers.satellite.traffic
   };
 
   /**
@@ -42,15 +58,55 @@
   }
 
   /**
-   * [addEventListener description]
+   * [addEventListener description - Used to add event listeners and handle the events when triggered.]
    * @method addEventListener
    * @param  {[here map object]}         map      [description - actual here map]
-   * @param  {[string]}         listener [description - can be 'click' , 'tap', 'dbltap' etc]
+   * @param  {[string]}         listener [description - can be 'click', 'drag', 'dbltap', 'dragEnd', 'dragstart', etc.,.]
    */
   function addEventListener(map, listener) {
     map.addEventListener(listener, function(evt) {
-       console.log(evt.type, evt.currentPointer.type);
+      console.log(evt.type);
+      var target = evt.target,
+          pointer = evt.currentPointer;
+
+       //If the event is triggered by the marker and the event is 'dragstart' then
+       //disable the map's drag behaviour. So that the marker can be dragged.
+       if (target instanceof mapsjs.map.Marker && evt.type == 'dragstart') {
+           mapView.behavior.disable();
+       }
+
+       //If the event is triggered by the marker and the event is 'dragend' then
+       //enable the map's drag behaviour. So that the map can be dragged.
+       if (target instanceof mapsjs.map.Marker && evt.type == 'dragend') {
+           mapView.behavior.enable();
+       }
+
+       //If the event is triggered by the marker and the event is drag then
+       //trigger the method to save the geolocation and draw the polyline.
+       if (target instanceof mapsjs.map.Marker && evt.type == 'drag') {
+         if(isDrawingModeEnabled) {
+           generateAndSaveServiceArea(evt, mapView.map);
+         }
+         target.setPosition(mapView.map.screenToGeo(pointer.viewportX, pointer.viewportY));
+       }
     });
+  }
+
+  /**
+   * [generateAndSaveServiceArea description - Gets the markers latitude and longitude and draws a polyline.]
+   * @method generateAndSaveServiceArea
+   * @param  {[event]}    layer [description - event object]
+   * @param  {[here map object]}          map   [description - actual here map]
+   */
+  function generateAndSaveServiceArea(event, map) {
+    var position = map.markers.getPosition();
+    console.log(position.lat);
+    fense.pushPoint({
+      lat: position.lat,
+      lng: position.lng
+    });
+    var polyline = new H.map.Polyline(fense, { style: { lineWidth: 5, strokeColor: 'red', fillColor: 'rgba(0,0,0,0)' }});
+    mapView.map.addObject(polyline);
   }
 
   /**
@@ -115,8 +171,9 @@
     var icon = new H.map.Icon(icons[iconName]);
 
     // Add the marker to the map:
-    var markers = new H.map.Marker(coords,{icon: icon});
-    map.addObject(markers);
+    map.markers = new H.map.Marker(coords,{icon: icon});
+    map.markers.draggable = true;
+    map.addObject(map.markers);
   }
 
   /**
@@ -169,7 +226,7 @@
         lat: locations[i].Location.DisplayPosition.Latitude,
         lng: locations[i].Location.DisplayPosition.Longitude
       };
-      constructMarkers(mapView.map, position, 'car');
+      constructMarkers(mapView.map, position, 'pencil');
       }
     }, function(e) {
       console.log("error" , e);

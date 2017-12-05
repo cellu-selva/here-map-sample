@@ -2,8 +2,8 @@
 window.onload = function(){
 // Create a Platform object:
 var platform = new H.service.Platform({
-      'app_id': 'kfX92V6MQJfOCWcZivSU',
-      'app_code': 'zK6Q_PKirtqx69toTeqATg',
+  'app_id': 'y8Vqiy3zNGyUHE5Y1bey',
+  'app_code': 'vXulv6kbe74kZAWKhpdpxA',
       useCIT: true,
       useHTTPS: true
     });
